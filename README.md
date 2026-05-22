@@ -14,6 +14,10 @@ the major RDF serialization formats.
 | `KnowledgeGraph` | Core graph model: `Node`, `Edge`, `Attribute`, `NamedGraph`, `KnowledgeGraphBuilder` |
 | `KnowledgeGraphParsers` | Streaming parsers for Turtle, TriG, N-Quads, RDF/XML, JSON-LD 1.1 |
 
+Presentation metadata such as grouping, ordering, shape, style, and layout
+intent is kept out of the RDF semantic graph. The planned `GraphPresentation` IR is documented in
+[`Specs/GraphPresentation.md`](Specs/GraphPresentation.md).
+
 ## Supported formats
 
 | Format | Media type | Spec |
