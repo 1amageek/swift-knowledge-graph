@@ -12,6 +12,7 @@ struct JSONLDGraphPresentationStyleExtractionTests {
           "@context": { "ex": "http://example.org/" },
           "view": {
             "styles": [
+              { "target": { "type": "canvas" }, "fill": "#101114" },
               { "target": { "type": "node", "id": "ex:a" }, "shape": "rectangle" },
               {
                 "target": {
@@ -40,6 +41,7 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.styles.map(\.target) == [
+            .canvas,
             .node(.iri("http://example.org/a")),
             .edge(EdgeIdentifier(
                 source: .iri("http://example.org/a"),
@@ -165,7 +167,18 @@ struct JSONLDGraphPresentationStyleExtractionTests {
                 "lineStyle": "dashed",
                 "sourceMarker": "circle",
                 "targetMarker": "diamond",
-                "route": "curved"
+                "route": "curved",
+                "edgeLabel": {
+                  "shape": "roundedRectangle",
+                  "radius": 5,
+                  "fill": "#111827",
+                  "stroke": "#9333EA",
+                  "strokeWidth": 1.5,
+                  "textColor": "#F5D0FE",
+                  "textWeight": "bold",
+                  "textSize": 11,
+                  "opacity": 0.92
+                }
               },
               {
                 "target": { "type": "allEdges" },
@@ -178,6 +191,13 @@ struct JSONLDGraphPresentationStyleExtractionTests {
                 "targetMarker": "not-a-marker",
                 "edgeRoute": "not-a-route",
                 "lineStyle": { "type": "solid" }
+              },
+              {
+                "target": { "type": "kind", "id": "handoff" },
+                "labelShape": "roundedRectangle",
+                "labelStrokeWidth": 2,
+                "labelLineStyle": "dotted",
+                "labelRadius": 4
               }
             ]
           }
@@ -197,6 +217,32 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         #expect(edge.style.edge?.sourceMarker == .circle)
         #expect(edge.style.edge?.targetMarker == .diamond)
         #expect(edge.style.edge?.route == .curved)
+        #expect(edge.style.edge?.label == GraphEdgeLabelStyle(
+            shape: .roundedRectangle(radius: 5),
+            fill: .color(GraphColor(
+                red: 0x11 / 255.0,
+                green: 0x18 / 255.0,
+                blue: 0x27 / 255.0
+            )),
+            stroke: GraphStroke(
+                paint: .color(GraphColor(
+                    red: 0x93 / 255.0,
+                    green: 0x33 / 255.0,
+                    blue: 0xEA / 255.0
+                )),
+                width: 1.5
+            ),
+            text: GraphTextStyle(
+                paint: .color(GraphColor(
+                    red: 0xF5 / 255.0,
+                    green: 0xD0 / 255.0,
+                    blue: 0xFE / 255.0
+                )),
+                weight: "bold",
+                size: 11
+            ),
+            opacity: 0.92
+        ))
 
         let alias = presentation.styles[1]
         #expect(alias.style.edge?.targetMarker == .arrow)
@@ -207,6 +253,11 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         #expect(invalid.style.edge?.targetMarker == nil)
         #expect(invalid.style.edge?.route == nil)
         #expect(invalid.style.stroke?.line == .solid)
+
+        let labelAlias = presentation.styles[3]
+        #expect(labelAlias.style.edge?.label?.stroke?.width == 2)
+        #expect(labelAlias.style.edge?.label?.stroke?.line == .dotted)
+        #expect(labelAlias.style.edge?.label?.shape == .roundedRectangle(radius: 4))
     }
 
     @Test

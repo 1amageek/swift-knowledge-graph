@@ -127,6 +127,8 @@ public enum JSONLDGraphPresentationExtractor {
               let type = object["type"] as? String
         else { return nil }
         switch type {
+        case "canvas", "graph", "background":
+            return .canvas
         case "node":
             guard let id = object["id"] as? String, let node = resolver.resolve(id) else { return nil }
             return .node(node)
@@ -185,7 +187,7 @@ public enum JSONLDGraphPresentationExtractor {
             return true
         case .kind:
             return hasEdgeSpecificProperties(object)
-        case .node, .namedGraph, .group, .rdfType, .allNodes, .allGroups:
+        case .canvas, .node, .namedGraph, .group, .rdfType, .allNodes, .allGroups:
             return false
         }
     }
@@ -196,6 +198,18 @@ public enum JSONLDGraphPresentationExtractor {
             || object["edgeMarker"] != nil
             || object["edgeRoute"] != nil
             || object["route"] != nil
+            || object["edgeLabel"] != nil
+            || object["labelFill"] != nil
+            || object["labelStroke"] != nil
+            || object["labelTextColor"] != nil
+            || object["labelTextWeight"] != nil
+            || object["labelTextSize"] != nil
+            || object["labelShape"] != nil
+            || object["labelOpacity"] != nil
+            || object["labelRadius"] != nil
+            || object["labelCornerRadius"] != nil
+            || object["labelStrokeWidth"] != nil
+            || object["labelLineStyle"] != nil
     }
 
     private static func parseShape(_ value: Any?, radius: Any?) -> GraphShape? {
@@ -245,15 +259,61 @@ public enum JSONLDGraphPresentationExtractor {
         let sourceMarker = parseMarker(object["sourceMarker"])
         let targetMarker = parseMarker(object["targetMarker"] ?? object["edgeMarker"])
         let route = parseRoute(object["edgeRoute"] ?? object["route"])
-        guard stroke != nil || sourceMarker != nil || targetMarker != nil || route != nil else {
+        let label = parseEdgeLabelStyle(object)
+        guard stroke != nil || sourceMarker != nil || targetMarker != nil || route != nil || label != nil else {
             return nil
         }
         return GraphEdgeStyle(
             stroke: stroke,
             sourceMarker: sourceMarker,
             targetMarker: targetMarker,
-            route: route
+            route: route,
+            label: label
         )
+    }
+
+    private static func parseEdgeLabelStyle(_ object: [String: Any]) -> GraphEdgeLabelStyle? {
+        let labelObject = object["edgeLabel"] as? [String: Any] ?? object
+        let shape = parseShape(
+            labelObject["shape"] ?? object["labelShape"],
+            radius: labelObject["radius"] ?? labelObject["cornerRadius"] ?? object["labelRadius"] ?? object["labelCornerRadius"]
+        )
+        let fill = parsePaint(labelObject["fill"] ?? object["labelFill"])
+        let stroke = parseLabelStroke(labelObject: labelObject, object: object)
+        let text = parseLabelTextStyle(labelObject: labelObject, object: object)
+        let opacity = labelObject["opacity"] as? Double ?? object["labelOpacity"] as? Double
+        guard shape != nil || fill != nil || stroke != nil || text != nil || opacity != nil else {
+            return nil
+        }
+        return GraphEdgeLabelStyle(
+            shape: shape,
+            fill: fill,
+            stroke: stroke,
+            text: text,
+            opacity: opacity
+        )
+    }
+
+    private static func parseLabelStroke(
+        labelObject: [String: Any],
+        object: [String: Any]
+    ) -> GraphStroke? {
+        let paint = parsePaint(labelObject["stroke"] ?? object["labelStroke"])
+        let width = labelObject["strokeWidth"] as? Double ?? object["labelStrokeWidth"] as? Double
+        let line = parseLineStyle(labelObject["lineStyle"] ?? object["labelLineStyle"])
+        guard paint != nil || width != nil || line != nil else { return nil }
+        return GraphStroke(paint: paint, width: width, line: line)
+    }
+
+    private static func parseLabelTextStyle(
+        labelObject: [String: Any],
+        object: [String: Any]
+    ) -> GraphTextStyle? {
+        let paint = parsePaint(labelObject["textColor"] ?? object["labelTextColor"])
+        let weight = labelObject["textWeight"] as? String ?? object["labelTextWeight"] as? String
+        let size = labelObject["textSize"] as? Double ?? object["labelTextSize"] as? Double
+        guard paint != nil || weight != nil || size != nil else { return nil }
+        return GraphTextStyle(paint: paint, weight: weight, size: size)
     }
 
     private static func parsePaint(_ value: Any?) -> GraphPaint? {

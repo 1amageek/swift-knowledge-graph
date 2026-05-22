@@ -24,6 +24,7 @@ public struct GraphStyleRule: Hashable, Sendable, Codable, Identifiable {
 }
 
 public enum GraphStyleTarget: Hashable, Sendable, Codable {
+    case canvas
     case node(NodeIdentifier)
     case edge(EdgeIdentifier)
     case namedGraph(String)
@@ -42,6 +43,7 @@ public enum GraphStyleTarget: Hashable, Sendable, Codable {
     }
 
     private enum Kind: String, Codable {
+        case canvas
         case node
         case edge
         case namedGraph
@@ -57,6 +59,8 @@ public enum GraphStyleTarget: Hashable, Sendable, Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(Kind.self, forKey: .type)
         switch type {
+        case .canvas:
+            self = .canvas
         case .node:
             self = .node(try container.decode(NodeIdentifier.self, forKey: .node))
         case .edge:
@@ -81,6 +85,8 @@ public enum GraphStyleTarget: Hashable, Sendable, Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
+        case .canvas:
+            try container.encode(Kind.canvas, forKey: .type)
         case .node(let node):
             try container.encode(Kind.node, forKey: .type)
             try container.encode(node, forKey: .node)
@@ -331,17 +337,42 @@ public struct GraphEdgeStyle: Hashable, Sendable, Codable {
     public let sourceMarker: GraphMarker?
     public let targetMarker: GraphMarker?
     public let route: GraphEdgeRouteStyle?
+    public let label: GraphEdgeLabelStyle?
 
     public init(
         stroke: GraphStroke? = nil,
         sourceMarker: GraphMarker? = nil,
         targetMarker: GraphMarker? = nil,
-        route: GraphEdgeRouteStyle? = nil
+        route: GraphEdgeRouteStyle? = nil,
+        label: GraphEdgeLabelStyle? = nil
     ) {
         self.stroke = stroke
         self.sourceMarker = sourceMarker
         self.targetMarker = targetMarker
         self.route = route
+        self.label = label
+    }
+}
+
+public struct GraphEdgeLabelStyle: Hashable, Sendable, Codable {
+    public let shape: GraphShape?
+    public let fill: GraphPaint?
+    public let stroke: GraphStroke?
+    public let text: GraphTextStyle?
+    public let opacity: Double?
+
+    public init(
+        shape: GraphShape? = nil,
+        fill: GraphPaint? = nil,
+        stroke: GraphStroke? = nil,
+        text: GraphTextStyle? = nil,
+        opacity: Double? = nil
+    ) {
+        self.shape = shape
+        self.fill = fill
+        self.stroke = stroke
+        self.text = text
+        self.opacity = opacity
     }
 }
 
