@@ -49,10 +49,9 @@ struct GraphPresentationCodableTests {
                         .edge(edge)
                     ],
                     arrangement: .stack(GraphStackArrangement(
-                        axis: .horizontal,
                         direction: .leftToRight,
                         alignment: .center,
-                        gap: 32
+                        spacing: 32
                     )),
                     priority: .required
                 ),
@@ -65,7 +64,7 @@ struct GraphPresentationCodableTests {
             styles: [
                 GraphStyleRule(
                     id: "style:node",
-                    target: .element(.node(.iri("http://example.org/source"))),
+                    target: .node(.iri("http://example.org/source")),
                     style: GraphStyle(
                         shape: .roundedRectangle(radius: 8),
                         fill: .color(GraphColor(red: 0.1, green: 0.2, blue: 0.3, alpha: 0.4)),
@@ -86,7 +85,7 @@ struct GraphPresentationCodableTests {
                 ),
                 GraphStyleRule(
                     id: "style:edge",
-                    target: .element(.edge(edge)),
+                    target: .edge(edge),
                     style: GraphStyle(
                         stroke: GraphStroke(
                             paint: .color(GraphColor(red: 0.4, green: 0.5, blue: 0.6)),
@@ -140,5 +139,60 @@ struct GraphPresentationCodableTests {
         let decoded = try JSONDecoder().decode([GraphLayoutDirective].self, from: data)
 
         #expect(decoded == directives)
+    }
+
+    @Test
+    func stackArrangementCodableSchemaDoesNotStoreAxis() throws {
+        let directive = GraphLayoutDirective(
+            id: "layout:stack",
+            items: [.node(.iri("http://example.org/a"))],
+            arrangement: .stack(GraphStackArrangement(
+                direction: .topToBottom,
+                alignment: .stretch,
+                spacing: 12
+            ))
+        )
+
+        let data = try JSONEncoder().encode(directive)
+        let root = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let arrangement = try #require(root["arrangement"] as? [String: Any])
+        let stack = try #require(arrangement["stack"] as? [String: Any])
+
+        #expect(arrangement["type"] as? String == "stack")
+        #expect(stack["direction"] as? String == "topToBottom")
+        #expect(stack["alignment"] as? String == "stretch")
+        #expect(stack["spacing"] as? Double == 12)
+        #expect(stack["axis"] == nil)
+    }
+
+    @Test
+    func styleCodableSchemaUsesExplicitTypeFields() throws {
+        let rule = GraphStyleRule(
+            id: "style:schema",
+            target: .rdfType("http://example.org/Type"),
+            style: GraphStyle(
+                shape: .roundedRectangle(radius: 10),
+                fill: .palette("stage"),
+                stroke: GraphStroke(line: .dashed(pattern: [4, 2]))
+            )
+        )
+
+        let data = try JSONEncoder().encode(rule)
+        let root = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let target = try #require(root["target"] as? [String: Any])
+        let style = try #require(root["style"] as? [String: Any])
+        let shape = try #require(style["shape"] as? [String: Any])
+        let fill = try #require(style["fill"] as? [String: Any])
+        let stroke = try #require(style["stroke"] as? [String: Any])
+        let line = try #require(stroke["line"] as? [String: Any])
+
+        #expect(target["type"] as? String == "rdfType")
+        #expect(target["id"] as? String == "http://example.org/Type")
+        #expect(shape["type"] as? String == "roundedRectangle")
+        #expect(shape["radius"] as? Double == 10)
+        #expect(fill["type"] as? String == "palette")
+        #expect(fill["value"] as? String == "stage")
+        #expect(line["type"] as? String == "dashed")
+        #expect(line["pattern"] as? [Double] == [4, 2])
     }
 }

@@ -14,10 +14,27 @@ struct JSONLDToRDF {
     static let rdfRest  = "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest"
     static let rdfNil   = "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"
     static let rdfJSON  = "http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON"
+    static let rdfsLabel = "http://www.w3.org/2000/01/rdf-schema#label"
+    static let schemaNameHTTP = "http://schema.org/name"
+    static let schemaNameHTTPS = "https://schema.org/name"
+    static let schemaTitleHTTP = "http://schema.org/title"
+    static let schemaTitleHTTPS = "https://schema.org/title"
+    static let dcTitle = "http://purl.org/dc/elements/1.1/title"
+    static let dctermsTitle = "http://purl.org/dc/terms/title"
     static let xsdString  = "http://www.w3.org/2001/XMLSchema#string"
     static let xsdBoolean = "http://www.w3.org/2001/XMLSchema#boolean"
     static let xsdInteger = "http://www.w3.org/2001/XMLSchema#integer"
     static let xsdDouble  = "http://www.w3.org/2001/XMLSchema#double"
+
+    static let namedGraphLabelPredicates = [
+        rdfsLabel,
+        schemaNameHTTPS,
+        schemaNameHTTP,
+        schemaTitleHTTPS,
+        schemaTitleHTTP,
+        dctermsTitle,
+        dcTitle
+    ]
 
     var context: ParsingContext
     var nextBlank: Int = 0
@@ -41,10 +58,16 @@ struct JSONLDToRDF {
                 // same convention NQuadsParser uses for blank graph terms.
                 let node = resolveSubjectOrObject(id: graphName)
                 graphID = node.key
-                try builder.insertNamedGraph(NamedGraph(id: node.key))
+                try builder.insertNamedGraph(NamedGraph(
+                    id: node.key,
+                    label: namedGraphLabel(for: graphName, in: map)
+                ))
             } else {
                 graphID = graphName
-                try builder.insertNamedGraph(NamedGraph(id: graphID!))
+                try builder.insertNamedGraph(NamedGraph(
+                    id: graphID!,
+                    label: namedGraphLabel(for: graphName, in: map)
+                ))
             }
             for subjectID in entries.keys.sorted() {
                 let entry = entries[subjectID]!
@@ -71,6 +94,37 @@ struct JSONLDToRDF {
                     }
                 }
             }
+        }
+    }
+
+    private func namedGraphLabel(for graphName: String, in map: JSONLDNodeMap) -> String? {
+        guard let entry = map.graphs["@default"]?[graphName] else { return nil }
+        for predicate in Self.namedGraphLabelPredicates {
+            guard let values = entry.properties[predicate] else { continue }
+            for value in values {
+                if let label = literalLabel(from: value), !label.isEmpty {
+                    return label
+                }
+            }
+        }
+        return nil
+    }
+
+    private func literalLabel(from value: JSONValue) -> String? {
+        guard case .object(let dict) = value,
+              let value = dict[JSONLDKeyword.value]
+        else { return nil }
+        switch value {
+        case .string(let string):
+            return string
+        case .int(let int):
+            return String(int)
+        case .double(let double):
+            return formatDouble(double)
+        case .bool(let bool):
+            return bool ? "true" : "false"
+        default:
+            return nil
         }
     }
 

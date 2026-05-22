@@ -37,20 +37,20 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.styles.map(\.target) == [
-            .element(.node(.iri("http://example.org/a"))),
-            .element(.edge(EdgeIdentifier(
+            .node(.iri("http://example.org/a")),
+            .edge(EdgeIdentifier(
                 source: .iri("http://example.org/a"),
                 predicate: "http://example.org/p",
                 target: .iri("http://example.org/b")
-            ))),
-            .element(.namedGraph("http://example.org/g")),
-            .element(.group("group:a")),
+            )),
+            .namedGraph("http://example.org/g"),
+            .group("group:a"),
             .kind("hub"),
-            .type("http://example.org/Type"),
-            .type("http://example.org/OtherType"),
+            .rdfType("http://example.org/Type"),
+            .rdfType("http://example.org/OtherType"),
             .allNodes,
             .allEdges,
             .allGroups
@@ -102,7 +102,7 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.styles.count == 4)
 
@@ -184,15 +184,15 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         let edge = presentation.styles[0]
-        #expect(edge.target == .element(.edge(EdgeIdentifier(
+        #expect(edge.target == .edge(EdgeIdentifier(
             source: .iri("http://example.org/a"),
             predicate: "http://example.org/p",
             target: .iri("http://example.org/b"),
             namedGraph: "http://example.org/g"
-        ))))
+        )))
         #expect(edge.style.edge?.stroke?.line == .dashed(pattern: nil))
         #expect(edge.style.edge?.sourceMarker == .circle)
         #expect(edge.style.edge?.targetMarker == .diamond)
@@ -227,10 +227,10 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.styles.count == 2)
-        #expect(presentation.styles[0].target == .element(.node(.iri("unknown:a"))))
+        #expect(presentation.styles[0].target == .node(.iri("unknown:a")))
         #expect(presentation.styles[0].style.shape == .rectangle)
         #expect(presentation.styles[1].target == .allNodes)
         #expect(presentation.styles[1].style.shape == .rectangle)
@@ -256,7 +256,7 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
         let style = try #require(presentation.styles.first)
 
         #expect(style.attributes == [
@@ -292,15 +292,15 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.styles.map(\.target) == [
-            .element(.edge(EdgeIdentifier(
+            .edge(EdgeIdentifier(
                 source: .iri("http://example.org/a"),
                 predicate: "http://example.org/p",
                 target: .iri("http://example.org/b")
-            ))),
-            .type("http://example.org/Type")
+            )),
+            .rdfType("http://example.org/Type")
         ])
     }
 
@@ -332,16 +332,16 @@ struct JSONLDGraphPresentationStyleExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.styles.map(\.target) == [
-            .element(.node(.iri("did:example:alice"))),
-            .element(.edge(EdgeIdentifier(
+            .node(.iri("did:example:alice")),
+            .edge(EdgeIdentifier(
                 source: .iri("did:example:alice"),
                 predicate: "tag:example.org,2026:knows",
                 target: .iri("mailto:bob@example.org")
-            ))),
-            .type("tag:example.org,2026:Person")
+            )),
+            .rdfType("tag:example.org,2026:Person")
         ])
     }
 }

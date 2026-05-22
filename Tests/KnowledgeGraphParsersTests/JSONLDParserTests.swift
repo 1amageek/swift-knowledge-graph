@@ -333,6 +333,27 @@ struct JSONLDParserTests {
         #expect(edge?.id.namedGraph == "http://example.org/g1")
     }
 
+    @Test("Named @graph uses graph-name title as NamedGraph label")
+    func namedGraphLabelFromTitle() throws {
+        let json = #"""
+        {
+          "@context": {
+            "title": "https://schema.org/name"
+          },
+          "@id": "http://example.org/g1",
+          "title": "Context",
+          "@graph": [
+            {"@id": "http://example.org/s", "http://example.org/p": "v"}
+          ]
+        }
+        """#
+        let g = try parse(json)
+        let named = try #require(g.namedGraphs.first { $0.id == "http://example.org/g1" })
+        #expect(named.label == "Context")
+        let triples = collectTriples(g)
+        #expect(triples.contains("http://example.org/g1 | https://schema.org/name | \"Context\""))
+    }
+
     // MARK: - Negative cases
 
     @Test("Malformed JSON throws ParserError.jsonSyntax")

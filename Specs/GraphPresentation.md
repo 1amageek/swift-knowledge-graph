@@ -52,6 +52,7 @@ flowchart TD
 | Attribute-inspired | style は `Attribute` のように外部由来 metadata として扱うが、共通語彙は型付きで定義する |
 | Generic shapes | shape vocabulary は一般的な図形に限定し、renderer 固有コンポーネント名を入れない |
 | Soft constraints first | 初期実装は `preferred` hint として扱い、既存 layout の安全制約を優先する |
+| Explicit Codable schema | associated-value enum は Swift の自動 `Codable` 形式に依存せず、`type` field を持つ明示 schema として保存する |
 
 ---
 
@@ -131,18 +132,25 @@ public struct GraphStyleRule: Hashable, Sendable, Codable, Identifiable {
 }
 ```
 
-`target` は単一要素、group、kind、type などを対象にできる。
+`target` は単一要素、group、kind、rdfType などを直接指定できる。
 
 ```swift
 public enum GraphStyleTarget: Hashable, Sendable, Codable {
-    case element(GraphElementReference)
+    case node(NodeIdentifier)
+    case edge(EdgeIdentifier)
+    case namedGraph(String)
+    case group(String)
     case kind(String)
-    case type(String)
+    case rdfType(String)
     case allNodes
     case allEdges
     case allGroups
 }
 ```
+
+Style target は `GraphElementReference` で包まず、style が解釈できる対象を
+direct case として持つ。これにより builder / renderer 側の switch が読みやすくなり、
+layout 用 reference と style scope の責務を分離できる。
 
 優先順は renderer が deterministic に解決する。
 
@@ -275,9 +283,16 @@ Renderer は対応できない route style を `automatic` として扱ってよ
 | `kg.textColor` | `GraphTextStyle.paint` |
 | `kg.edgeMarker` | `GraphEdgeStyle.targetMarker` |
 | `kg.edgeRoute` | `GraphEdgeRouteStyle` |
+| `kg.layout.direction` | `GraphStackArrangement.direction` |
+| `kg.layout.alignment` | `GraphStackArrangement.alignment` |
+| `kg.layout.spacing` | `GraphStackArrangement.spacing` |
 
 Canonical attributes are useful for light-weight source formats and builder APIs,
 but `GraphPresentation.styles` is the normalized representation that renderers should consume.
+Layout attributes follow SwiftUI naming conventions where the meaning is shared:
+`spacing` is the distance between arranged items, and `alignment` is the cross-axis
+placement hint for stack-like arrangements. The IR keeps platform-independent
+types and does not expose SwiftUI concrete types.
 
 ```mermaid
 flowchart LR
@@ -326,12 +341,25 @@ public struct GraphLayoutDirective: Hashable, Sendable, Codable, Identifiable {
 
 | Arrangement | 意味 |
 |---|---|
-| `stack` | item を指定 axis / direction に沿って順番に配置する |
+| `stack` | item を指定 direction に沿って順番に配置する |
 | `order` | layout engine の候補順だけを指定する |
 | `rank` | item を同一 rank / band に揃える |
 | `grid` | 行列状に配置する |
 | `pin` | item の位置を固定または優先する |
 | `align` | item の辺または中心を揃える |
+
+`stack` は `axis` を保存しない。`axis` は `GraphStackDirection` から導出する。
+これにより `horizontal + topToBottom` のような矛盾した状態を API 上作れない。
+
+```swift
+public struct GraphStackArrangement: Hashable, Sendable, Codable {
+    public let direction: GraphStackDirection
+    public let alignment: GraphStackAlignment
+    public let spacing: Double?
+
+    public var axis: GraphAxis { direction.axis }
+}
+```
 
 初期実装では `stack` と `order` を優先する。
 
@@ -343,7 +371,9 @@ JSON-LD parser は W3C JSON-LD to RDF algorithm に集中する。非標準の t
 `view` metadata は parser 本体では扱わない。
 
 `view.groups` / `view.layouts` / `view.styles` は別 extractor が読み取り、
-`GraphPresentation` を生成する。
+`GraphPresentation` を生成する。`view` が無い、または有効な presentation metadata が
+無い場合は `nil` を返す。JSON が壊れている、または top-level が object ではない場合は
+`JSONLDGraphPresentationExtractionError` を throw する。
 
 ```mermaid
 flowchart TD

@@ -39,7 +39,7 @@ struct JSONLDGraphPresentationExtractorTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.groups.count == 1)
         let layer = try #require(presentation.groups.first)
@@ -89,11 +89,11 @@ struct JSONLDGraphPresentationExtractorTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.styles.count == 2)
         let nodeStyle = presentation.styles[0]
-        #expect(nodeStyle.target == .element(.node(.iri("http://example.org/alice"))))
+        #expect(nodeStyle.target == .node(.iri("http://example.org/alice")))
         #expect(nodeStyle.style.shape == .capsule)
         #expect(nodeStyle.style.fill == .color(GraphColor(
             red: 34.0 / 255.0,
@@ -121,10 +121,9 @@ struct JSONLDGraphPresentationExtractorTests {
               {
                 "id": "layout:stages",
                 "type": "stack",
-                "axis": "horizontal",
                 "direction": "leftToRight",
                 "alignment": "center",
-                "gap": 48,
+                "spacing": 48,
                 "items": [
                   { "type": "group", "id": "group:source" },
                   { "type": "group", "id": "group:dc" },
@@ -137,7 +136,7 @@ struct JSONLDGraphPresentationExtractorTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
         let layout = try #require(presentation.layouts.first)
 
         #expect(layout.id == "layout:stages")
@@ -153,7 +152,6 @@ struct JSONLDGraphPresentationExtractorTests {
         #expect(stack.axis == .horizontal)
         #expect(stack.direction == .leftToRight)
         #expect(stack.alignment == .center)
-        #expect(stack.gap == 48)
+        #expect(stack.spacing == 48)
     }
 }
-

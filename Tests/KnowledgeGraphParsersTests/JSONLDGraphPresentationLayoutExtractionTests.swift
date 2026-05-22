@@ -15,10 +15,9 @@ struct JSONLDGraphPresentationLayoutExtractionTests {
               {
                 "id": "layout:stack",
                 "type": "stack",
-                "axis": "vertical",
                 "direction": "bottomToTop",
                 "alignment": "trailing",
-                "gap": 18,
+                "spacing": 18,
                 "scope": { "type": "group", "id": "group:root" },
                 "items": ["ex:a", { "type": "group", "id": "group:b" }],
                 "priority": "required"
@@ -57,7 +56,7 @@ struct JSONLDGraphPresentationLayoutExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.layouts.count == 6)
 
@@ -76,7 +75,7 @@ struct JSONLDGraphPresentationLayoutExtractionTests {
         #expect(stack.axis == .vertical)
         #expect(stack.direction == .bottomToTop)
         #expect(stack.alignment == .trailing)
-        #expect(stack.gap == 18)
+        #expect(stack.spacing == 18)
 
         #expect(presentation.layouts[1].arrangement == .order)
         #expect(presentation.layouts[2].arrangement == .rank(.horizontal))
@@ -94,7 +93,6 @@ struct JSONLDGraphPresentationLayoutExtractionTests {
             "layouts": [
               {
                 "type": "stack",
-                "axis": "not-axis",
                 "direction": "not-direction",
                 "alignment": "not-alignment",
                 "items": ["ex:a"],
@@ -123,7 +121,7 @@ struct JSONLDGraphPresentationLayoutExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.layouts.count == 5)
         #expect(presentation.layouts[0].id == "layout:0")
@@ -135,7 +133,7 @@ struct JSONLDGraphPresentationLayoutExtractionTests {
         #expect(stack.axis == .horizontal)
         #expect(stack.direction == .leftToRight)
         #expect(stack.alignment == .center)
-        #expect(stack.gap == nil)
+        #expect(stack.spacing == nil)
         #expect(presentation.layouts[1].arrangement == .align(.center))
         #expect(presentation.layouts[2].arrangement == .order)
         #expect(presentation.layouts[3].arrangement == .pin(nil))
@@ -173,7 +171,7 @@ struct JSONLDGraphPresentationLayoutExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.layouts.count == 1)
         #expect(presentation.layouts[0].id == "layout:mixed")

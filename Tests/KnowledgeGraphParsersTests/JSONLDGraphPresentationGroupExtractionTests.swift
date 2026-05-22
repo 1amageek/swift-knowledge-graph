@@ -23,7 +23,7 @@ struct JSONLDGraphPresentationGroupExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
 
         #expect(presentation.groups.map(\.id) == ["group:valid"])
     }
@@ -71,7 +71,7 @@ struct JSONLDGraphPresentationGroupExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
         let group = try #require(presentation.groups.first)
 
         #expect(group.members == [
@@ -120,7 +120,7 @@ struct JSONLDGraphPresentationGroupExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
         let root = try #require(presentation.groups.first)
 
         #expect(root.members == [
@@ -154,7 +154,7 @@ struct JSONLDGraphPresentationGroupExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
         let group = try #require(presentation.groups.first)
 
         #expect(group.attributes == [
@@ -182,7 +182,7 @@ struct JSONLDGraphPresentationGroupExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
         let group = try #require(presentation.groups.first)
 
         #expect(group.members == [
@@ -212,7 +212,7 @@ struct JSONLDGraphPresentationGroupExtractionTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(from: payload))
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(from: payload))
         let group = try #require(presentation.groups.first)
 
         #expect(group.members == [

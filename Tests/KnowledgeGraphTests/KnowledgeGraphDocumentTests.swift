@@ -30,7 +30,7 @@ struct KnowledgeGraphDocumentTests {
             styles: [
                 GraphStyleRule(
                     id: "style:visual",
-                    target: .element(.group("group:visual")),
+                    target: .group("group:visual"),
                     style: GraphStyle(fill: .semantic("groupFill"))
                 )
             ]

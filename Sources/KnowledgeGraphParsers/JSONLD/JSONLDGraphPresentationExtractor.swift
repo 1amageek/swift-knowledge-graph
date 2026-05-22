@@ -1,6 +1,11 @@
 import Foundation
 import KnowledgeGraph
 
+public enum JSONLDGraphPresentationExtractionError: Error, Equatable {
+    case invalidJSON(String)
+    case invalidRoot
+}
+
 /// Extracts non-standard top-level JSON-LD `view` metadata into presentation IR.
 ///
 /// This type deliberately sits outside `JSONLDParser`: `view` is renderer
@@ -11,17 +16,18 @@ public enum JSONLDGraphPresentationExtractor {
         from payload: String,
         id: String = "presentation:default",
         title: String? = nil
-    ) -> GraphPresentation? {
-        guard let data = payload.data(using: .utf8) else { return nil }
+    ) throws -> GraphPresentation? {
+        let data = Data(payload.utf8)
         let object: Any
         do {
             object = try JSONSerialization.jsonObject(with: data)
         } catch {
-            return nil
+            throw JSONLDGraphPresentationExtractionError.invalidJSON(error.localizedDescription)
         }
-        guard let root = object as? [String: Any],
-              let view = root["view"] as? [String: Any]
-        else { return nil }
+        guard let root = object as? [String: Any] else {
+            throw JSONLDGraphPresentationExtractionError.invalidRoot
+        }
+        guard let view = root["view"] as? [String: Any] else { return nil }
 
         let resolver = IdentifierResolver(context: root["@context"])
         let groups = parseGroups(view["groups"], resolver: resolver)
@@ -44,10 +50,10 @@ public enum JSONLDGraphPresentationExtractor {
         payload: String,
         presentationID: String = "presentation:default",
         title: String? = nil
-    ) -> KnowledgeGraphDocument {
+    ) throws -> KnowledgeGraphDocument {
         KnowledgeGraphDocument(
             graph: graph,
-            presentations: presentation(from: payload, id: presentationID, title: title).map { [$0] } ?? []
+            presentations: try presentation(from: payload, id: presentationID, title: title).map { [$0] } ?? []
         )
     }
 
@@ -123,16 +129,16 @@ public enum JSONLDGraphPresentationExtractor {
         switch type {
         case "node":
             guard let id = object["id"] as? String, let node = resolver.resolve(id) else { return nil }
-            return .element(.node(node))
+            return .node(node)
         case "edge":
             guard let edge = parseEdgeReference(object, resolver: resolver) else { return nil }
-            return .element(.edge(edge))
+            return .edge(edge)
         case "namedGraph":
             guard let id = object["id"] as? String, !id.isEmpty else { return nil }
-            return .element(.namedGraph(id))
+            return .namedGraph(id)
         case "group":
             guard let id = object["id"] as? String, !id.isEmpty else { return nil }
-            return .element(.group(id))
+            return .group(id)
         case "kind":
             guard let id = object["id"] as? String, !id.isEmpty else { return nil }
             return .kind(id)
@@ -140,7 +146,7 @@ public enum JSONLDGraphPresentationExtractor {
             guard let id = object["id"] as? String,
                   let resolved = resolver.resolveIRI(id)
             else { return nil }
-            return .type(resolved)
+            return .rdfType(resolved)
         case "allNodes":
             return .allNodes
         case "allEdges":
@@ -175,11 +181,11 @@ public enum JSONLDGraphPresentationExtractor {
         object: [String: Any]
     ) -> Bool {
         switch target {
-        case .element(.edge), .allEdges:
+        case .edge, .allEdges:
             return true
         case .kind:
             return hasEdgeSpecificProperties(object)
-        case .element(.node), .element(.namedGraph), .element(.group), .type, .allNodes, .allGroups:
+        case .node, .namedGraph, .group, .rdfType, .allNodes, .allGroups:
             return false
         }
     }
@@ -378,10 +384,9 @@ public enum JSONLDGraphPresentationExtractor {
         switch type {
         case "stack":
             return .stack(GraphStackArrangement(
-                axis: parseAxis(object["axis"]) ?? .horizontal,
                 direction: parseDirection(object["direction"]) ?? .leftToRight,
                 alignment: parseAlignment(object["alignment"]) ?? .center,
-                gap: object["gap"] as? Double
+                spacing: object["spacing"] as? Double
             ))
         case "rank":
             return .rank(parseAxis(object["axis"]))
@@ -401,14 +406,14 @@ public enum JSONLDGraphPresentationExtractor {
         return GraphAxis(rawValue: string)
     }
 
-    private static func parseDirection(_ value: Any?) -> GraphDirection? {
+    private static func parseDirection(_ value: Any?) -> GraphStackDirection? {
         guard let string = value as? String else { return nil }
-        return GraphDirection(rawValue: string)
+        return GraphStackDirection(rawValue: string)
     }
 
-    private static func parseAlignment(_ value: Any?) -> GraphAlignment? {
+    private static func parseAlignment(_ value: Any?) -> GraphStackAlignment? {
         guard let string = value as? String else { return nil }
-        return GraphAlignment(rawValue: string)
+        return GraphStackAlignment(rawValue: string)
     }
 
     private static func parsePoint(_ value: Any?) -> GraphPoint? {

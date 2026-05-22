@@ -6,18 +6,35 @@ import KnowledgeGraph
 struct JSONLDGraphPresentationRobustnessTests {
 
     @Test
-    func returnsNilForMalformedOrMissingViewPayloads() {
-        #expect(JSONLDGraphPresentationExtractor.presentation(from: "{") == nil)
-        #expect(JSONLDGraphPresentationExtractor.presentation(from: #"[]"#) == nil)
-        #expect(JSONLDGraphPresentationExtractor.presentation(from: #"{"@graph":[]}"#) == nil)
-        #expect(JSONLDGraphPresentationExtractor.presentation(from: #"{"view":{}}"#) == nil)
-        #expect(JSONLDGraphPresentationExtractor.presentation(from: #"{"view":{"groups":{},"styles":{},"layouts":{}}}"#) == nil)
+    func throwsForMalformedOrInvalidRootPayloads() {
+        do {
+            _ = try JSONLDGraphPresentationExtractor.presentation(from: "{")
+            Issue.record("Expected malformed JSON to throw")
+        } catch JSONLDGraphPresentationExtractionError.invalidJSON(_) {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+
+        do {
+            _ = try JSONLDGraphPresentationExtractor.presentation(from: #"[]"#)
+            Issue.record("Expected non-object root to throw")
+        } catch JSONLDGraphPresentationExtractionError.invalidRoot {
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
     }
 
     @Test
-    func documentUsesEmptyPresentationListWhenExtractionReturnsNil() {
+    func returnsNilForMissingOrEmptyViewPayloads() throws {
+        #expect(try JSONLDGraphPresentationExtractor.presentation(from: #"{"@graph":[]}"#) == nil)
+        #expect(try JSONLDGraphPresentationExtractor.presentation(from: #"{"view":{}}"#) == nil)
+        #expect(try JSONLDGraphPresentationExtractor.presentation(from: #"{"view":{"groups":{},"styles":{},"layouts":{}}}"#) == nil)
+    }
+
+    @Test
+    func documentUsesEmptyPresentationListWhenExtractionReturnsNil() throws {
         let graph = KnowledgeGraph(nodes: [Node(id: .iri("http://example.org/a"))])
-        let document = JSONLDGraphPresentationExtractor.document(
+        let document = try JSONLDGraphPresentationExtractor.document(
             graph: graph,
             payload: #"{"@graph":[]}"#,
             presentationID: "presentation:missing",
@@ -45,7 +62,7 @@ struct JSONLDGraphPresentationRobustnessTests {
         }
         """#
 
-        let presentation = try #require(JSONLDGraphPresentationExtractor.presentation(
+        let presentation = try #require(try JSONLDGraphPresentationExtractor.presentation(
             from: payload,
             id: "presentation:custom",
             title: "Custom"
